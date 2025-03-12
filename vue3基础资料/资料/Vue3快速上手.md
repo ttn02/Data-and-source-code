@@ -565,7 +565,7 @@ function test(){
 ```
 ## 3.8. 【computed】
 
-作用：根据已有数据计算出新数据（和`Vue2`中的`computed`作用一致）。
+作用：具有缓存效果，相同的方法只用调用一次即可（没有计算属性的普通方法，使用几次调几次，没有缓存效果），根据已有数据计算出新数据（和`Vue2`中的`computed`作用一致）。
 
 <img src="images/computed.gif" style="zoom:20%;" />  
 
@@ -600,6 +600,11 @@ function test(){
     // 修改
     set(val){
       console.log('有人修改了fullName',val)
+        // 另一种写法：
+        // const [str1, str2] = val.split('-')
+        // firstName.value = str1
+        // lastName.value = str2
+        // val.split('-')[0] 按指定字符分割字符串，这里选取分割后的第一份存到 firstName.value 中。
       firstName.value = val.split('-')[0]
       lastName.value = val.split('-')[1]
     }
