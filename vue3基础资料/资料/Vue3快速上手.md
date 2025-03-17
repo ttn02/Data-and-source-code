@@ -502,7 +502,7 @@ function test(){
 >
 >    <img src="images/自动补充value.png" alt="自动补充value" style="zoom:50%;border-radius:20px" /> 
 >
-> 2. `reactive`重新分配一个新对象，会**失去**响应式（可以使用`Object.assign`去整体替换以此来修改reactive对象）。
+> 2. `reactive`重新分配一个新对象，会**失去**响应式（可以使用`Object.assign`去整体替换以此来修改reactive对象，地址值没有发生变化）。
 >
 >    ```javascript
 >    function changeCar(){
@@ -646,9 +646,10 @@ function test(){
     sum.value += 1
   }
   // 监视，情况一：监视【ref】定义的【基本类型】数据
+  // 调用watch的函数返回的是一个停止监视的函数
   const stopWatch = watch(sum,(newValue,oldValue)=>{
     console.log('sum变化了',newValue,oldValue)
-    if(newValue >= 10){
+    if(newValue >= 10){  // 如果新值大于等于10，则停止监视。
       stopWatch()
     }
   })
@@ -692,20 +693,24 @@ function test(){
   function changePerson(){
     person.value = {name:'李四',age:90}
   }
+  // 仅仅监听该对象的地址值，没有监听内部属性变化
+  watch(person,(newValue,oldValue)=>{
+    console.log('person变化了',newValue,oldValue)
+  })
   /* 
     监视，情况一：监视【ref】定义的【对象类型】数据，监视的是对象的地址值，若想监视对象内部属性的变化，需要手动开启深度监视
     watch的第一个参数是：被监视的数据
     watch的第二个参数是：监视的回调
-    watch的第三个参数是：配置对象（deep、immediate等等.....） 
+    watch的第三个参数是：配置对象（deep(监视属性)、immediate(立即监视当前属性的值)等等.....） 
   */
   watch(person,(newValue,oldValue)=>{
     console.log('person变化了',newValue,oldValue)
-  },{deep:true})
+  },{deep:true ,immidiate:true})
   
 </script>
 ```
 ### *  情况三
-监视`reactive`定义的【对象类型】数据，且默认开启了深度监视。
+监视`reactive`定义的【对象类型】数据，且默认开启了深度监视（官方文档：隐式创建深度监视,{deep:true}且无法关闭）。
 ```vue
 <template>
   <div class="person">
@@ -764,7 +769,7 @@ function test(){
 1. 若该属性值**不是**【对象类型】，需要写成函数形式。
 2. 若该属性值是**依然**是【对象类型】，可直接编，也可写成函数，建议写成函数。
 
-结论：监视的要是对象里的属性，那么最好写函数式，注意点：若是对象监视的是地址值，需要关注对象内部，需要手动开启深度监视。
+结论：监视的要是对象里的属性，那么最好写函数式（getter函数：一个函数一个返回值，() => { return person.age }），注意点：若是对象监视的是地址值，需要关注对象内部，需要手动开启深度监视。
 
 ```vue
 <template>
