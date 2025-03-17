@@ -600,10 +600,12 @@ function test(){
     // 修改
     set(val){
       console.log('有人修改了fullName',val)
+        
         // 另一种写法：
         // const [str1, str2] = val.split('-')
         // firstName.value = str1
         // lastName.value = str2
+        
         // val.split('-')[0] 按指定字符分割字符串，这里选取分割后的第一份存到 firstName.value 中。
       firstName.value = val.split('-')[0]
       lastName.value = val.split('-')[1]
@@ -962,7 +964,7 @@ function test(){
     <h1 ref="title1">尚硅谷</h1>
     <h2 ref="title2">前端</h2>
     <h3 ref="title3">Vue</h3>
-    <input type="text" ref="inpt"> <br><br>
+    <input type="text" ref="input"> <br><br>
     <button @click="showLog">点我打印内容</button>
   </div>
 </template>
@@ -1150,6 +1152,7 @@ let person:Persons = [
 > <template>
 > <div class="person">
 > <ul>
+>     // 使用v-for便利时必须使用 :key 属性来分配 id 防止错乱，否则后续分配和修改时容易数据错乱。
 >   <li v-for="item in list" :key="item.id">
 >      {{item.name}}--{{item.age}}
 >    </li>
@@ -1160,16 +1163,22 @@ let person:Persons = [
 > <script lang="ts" setup name="Person">
 > import {defineProps} from 'vue'
 > import {type PersonInter} from '@/types'
-> 
-> // 第一种写法：仅接收，不管传多少个都需要用数组接收[]
+>     
+> // defineProps返回值是一个对象{}，不管传多少个都需要用数组[]接收
+> let x = defineProps(['a', 'b'])
+> console.log(x.a) // 调用时直接 x.a 和 x.b 即可
+>     
+> // 第一种写法：仅接收
 > // const props = defineProps(['list'])
 > 
-> // 第二种写法：接收+限制类型
+> // 第二种写法：接收 + 限制类型
+> // 用于告诉父组件必须要给子组件传什么类型的数据
 > // defineProps<{list:Persons}>()
 > 
-> // 第三种写法：接收+限制类型+指定默认值+限制必要性
+> // 第三种写法：接收 + 限制类型 + 指定默认值 + 限制必要性 ?:
+> // {list?:Persons} 冒号前面加问号，用于解释可传可不传
 > let props = withDefaults(defineProps<{list?:Persons}>(),{
->   list:()=>[{id:'asdasg01',name:'小猪佩奇',age:18}]
+>   list:()=>[{id:'asdasg01',name:'小猪佩奇',age:18}]  // 这里得是一个函数（函数里面是一个数组）返回一个对象用来指定默认值
 > })
 > console.log(props)
 > </script>
