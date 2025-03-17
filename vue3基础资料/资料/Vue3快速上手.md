@@ -189,7 +189,7 @@ npm create vue@latest
     },
   }
 </script>
-<style>
+<style scoped>	// scoped局部样式
   .person {
     background-color: #ddd;
     box-shadow: 0 0 10px;
@@ -769,7 +769,7 @@ function test(){
 1. 若该属性值**不是**【对象类型】，需要写成函数形式。
 2. 若该属性值是**依然**是【对象类型】，可直接编，也可写成函数，建议写成函数。
 
-结论：监视的要是对象里的属性，那么最好写函数式（getter函数：一个函数一个返回值，() => { return person.age }），注意点：若是对象监视的是地址值，需要关注对象内部，需要手动开启深度监视。
+结论：【监视的要是对象里的属性，那么最好写函数式】（`getter函数：一个函数一个返回值，() => { return person.age }`），注意点：若是对象监视的是地址值，需要关注【对象内部】，需要手动开启深度监视`,{deep:true}`。
 
 ```vue
 <template>
@@ -820,10 +820,10 @@ function test(){
     console.log('person.name变化了',newValue,oldValue)
   }) */
 
-  // 监视，情况四：监视响应式对象中的某个属性，且该属性是对象类型的，可以直接写，也能写函数，更推荐写函数
+  // 监视，情况四：监视响应式对象中的某个属性，且该属性是对象类型的，可以直接写，也能写函数，【更推荐写函数】
   watch(()=>person.car,(newValue,oldValue)=>{
     console.log('person.car变化了',newValue,oldValue)
-  },{deep:true})
+  },{deep:true})	// 对象类型更加关心地址值，需要关注细枝末节事时只需要给其【添加深度】即可。
 </script>
 ```
 ### * 情况五
@@ -872,7 +872,7 @@ function test(){
     person.car = {c1:'雅迪',c2:'爱玛'}
   }
 
-  // 监视，情况五：监视上述的多个数据
+  // 监视，情况五：监视上述的多个数据（用数组装填）
   watch([()=>person.name,person.car],(newValue,oldValue)=>{
     console.log('person.car变化了',newValue,oldValue)
   },{deep:true})
@@ -899,7 +899,7 @@ function test(){
       <h1>需求：水温达到50℃，或水位达到20cm，则联系服务器</h1>
       <h2 id="demo">水温：{{temp}}</h2>
       <h2>水位：{{height}}</h2>
-      <button @click="changePrice">水温+1</button>
+      <button @click="changePrice">水温+10</button>
       <button @click="changeSum">水位+10</button>
     </div>
   </template>
@@ -915,7 +915,7 @@ function test(){
       temp.value += 10
     }
     function changeSum(){
-      height.value += 1
+      height.value += 10
     }
   
     // 用watch实现，需要明确的指出要监视：temp、height
@@ -992,12 +992,12 @@ function test(){
 </script>
 ```
 
-用在组件标签上：
+`ref属性`用在组件标签上：
 
 ```vue
 <!-- 父组件App.vue -->
 <template>
-  <Person ref="ren"/>
+  <Person ref="ren"/>	// ref属性用在组件标签上
   <button @click="test">测试</button>
 </template>
 
@@ -1014,7 +1014,7 @@ function test(){
 </script>
 
 
-<!-- 子组件Person.vue中要使用defineExpose暴露内容 -->
+<!-- 子组件Person.vue中要使用defineExpose暴露内容,外部才能接收内容 -->
 <script lang="ts" setup name="Person">
   import {ref,defineExpose} from 'vue'
 	// 数据
@@ -1022,79 +1022,159 @@ function test(){
   let age = ref(18)
   /****************************/
   /****************************/
-  // 使用defineExpose将组件中的数据交给外部
+  // 使用defineExposed对象将组件中的数据交给外部
   defineExpose({name,age})
 </script>
 ```
 
 
 
-## 3.12. 【props】
+
+
+## TS中的`_接口_泛型_自定义类型_`
+
+### 接口
+
+新建一个type文件夹，在里面创建一个`index.ts`文件（这样创建调用时不用写文件名 `../types/` 即可调用）
+
+```ts
+// 定义一个接口，用于限制person对象的具体属性，再使其暴露出去export
+// 在组件里面引入时需要额外添加，例如`import {type PersonInter } from "@/types"`
+export interface PersonInter　{
+    id: string,
+    name: string,
+    age: number
+}
+
+```
+
+**引入时：**
+
+在组件里面引入时需要额外添加`type`来表示他是个类型，例如`import {type PersonInter } from "@/types"`。【@符号表示的是在最顶端目录`src`下寻找】
+
+**调用时：**
+
+需要给调用的值给他限定：
+
+```ts
+let person:PersonInter = {id: '123', name: '张三', age :18}
+```
+
+
+
+### 泛型
+
+什么时候使用就什么时候定义
+
+```ts
+let person:Array<PersonInter> = [
+    {id: '123', name: '张三', age :18},
+    {id: '123', name: '张三', age :18},
+    {id: '123', name: '张三', age :18}
+]
+```
+
+### 自定义类型
+
+在前置的`index.ts`文件写入以下内容并抛出。
+
+```ts
+// 第一种写法
+export type Persons = Array<PersonInter>
+// 第二种写法
+export type Persons = PersonInter[]
+```
+
+**使用时**
+
+~~~ts
+/**
+化简前
+let person:Array<PersonInter> = [
+    {id: '123', name: '张三', age :18},
+    {id: '123', name: '张三', age :18},
+    {id: '123', name: '张三', age :18}
+]
+**/
+// 使用自定义类型化简后：
+let person:Persons = [
+    {id: '123', name: '张三', age :18},
+    {id: '123', name: '张三', age :18},
+    {id: '123', name: '张三', age :18}
+]
+~~~
+
+
+
+
+
+## 3.12. 【props】父组件给子组件传递数据
 
 > ```js
->// 定义一个接口，限制每个Person对象的格式
+> // 定义一个接口，限制每个Person对象的格式
 > export interface PersonInter {
->  id:string,
->  name:string,
->     age:number
->    }
->    
+> id:string,
+> name:string,
+>  age:number，
+>  x?:number	// 在逗号前面加个问号，代表第四个值可写可不写
+> }
+> 
 > // 定义一个自定义类型Persons
 > export type Persons = Array<PersonInter>
 > ```
-> 
+>
 > `App.vue`中代码：
 >
 > ```vue
-><template>
+> <template>
 > 	<Person :list="persons"/>
 > </template>
->   
-> <script lang="ts" setup name="App">
->   import Person from './components/Person.vue'
->   import {reactive} from 'vue'
->     import {type Persons} from './types'
->   
->     let persons = reactive<Persons>([
->      {id:'e98219e12',name:'张三',age:18},
->       {id:'e98219e13',name:'李四',age:19},
->        {id:'e98219e14',name:'王五',age:20}
->      ])
->    </script>
->   
-> ```
 > 
+> <script lang="ts" setup name="App">
+> import Person from './components/Person.vue'
+> import {reactive} from 'vue'
+>  import {type Persons} from './types'
+> 
+>  let persons = reactive<Persons>([
+>   {id:'e98219e12',name:'张三',age:18},
+>    {id:'e98219e13',name:'李四',age:19},
+>     {id:'e98219e14',name:'王五',age:20}
+>   ])
+> </script>
+> 
+> ```
+>
 > `Person.vue`中代码：
 >
 > ```Vue
-><template>
+> <template>
 > <div class="person">
->  <ul>
->      <li v-for="item in list" :key="item.id">
->         {{item.name}}--{{item.age}}
->       </li>
->     </ul>
->    </div>
->    </template>
->   
+> <ul>
+>   <li v-for="item in list" :key="item.id">
+>      {{item.name}}--{{item.age}}
+>    </li>
+>  </ul>
+> </div>
+> </template>
+> 
 > <script lang="ts" setup name="Person">
 > import {defineProps} from 'vue'
 > import {type PersonInter} from '@/types'
->   
->   // 第一种写法：仅接收
-> // const props = defineProps(['list'])
->   
->   // 第二种写法：接收+限制类型
-> // defineProps<{list:Persons}>()
->   
->   // 第三种写法：接收+限制类型+指定默认值+限制必要性
-> let props = withDefaults(defineProps<{list?:Persons}>(),{
->      list:()=>[{id:'asdasg01',name:'小猪佩奇',age:18}]
->   })
->    console.log(props)
->   </script>
->   ```
 > 
+> // 第一种写法：仅接收，不管传多少个都需要用数组接收[]
+> // const props = defineProps(['list'])
+> 
+> // 第二种写法：接收+限制类型
+> // defineProps<{list:Persons}>()
+> 
+> // 第三种写法：接收+限制类型+指定默认值+限制必要性
+> let props = withDefaults(defineProps<{list?:Persons}>(),{
+>   list:()=>[{id:'asdasg01',name:'小猪佩奇',age:18}]
+> })
+> console.log(props)
+> </script>
+> ```
+>
 
 ## 3.13. 【生命周期】
 
