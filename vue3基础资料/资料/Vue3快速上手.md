@@ -1721,6 +1721,27 @@ routes:[
     return route.query
   }
 }
+
+// 使用props配置前的Detail组件
+<ul>
+    <li>编号：{{route.params.id}}</li>
+	<li>标题：{{route.params.title}}</li>
+    <li>内容：{{route.params.content}}</li>
+</ul>
+<script setup>
+    import {useRoute} from 'vue-router' 
+    const route = useRout()
+</script>
+
+// 使用props配置后的Detail组件
+<ul>
+    <li>编号：{{id}}</li>
+	<li>标题：{{title}}</li>
+    <li>内容：{{content}}</li>
+</ul>
+<script setup>
+    defineProps(['id', 'title', 'conten'])
+</script>
 ```
 
 ## 4.10. 【 replace属性】
@@ -1748,6 +1769,14 @@ import {useRoute,useRouter} from 'vue-router'
 const route = useRoute()
 const router = useRouter()
 
+// 导入路由器，有了路由器即可调取路由
+onMounted(()=>{
+    setTimeout(()=>{
+        						// replace为替换模式，用于替换当前记录。
+        router.push('/news')	// push为替换模式，保存浏览器历史记录。
+    },3000)	// 3秒后跳转到以 /news 的路由
+})
+
 console.log(route.query)
 console.log(route.parmas)
 console.log(router.push)
@@ -1756,7 +1785,7 @@ console.log(router.replace)
 
 ## 4.12. 【重定向】
 
-1. 作用：将特定的路径，重新定向到已有路由。
+1. 作用：将特定的路径，重新定向到已有路由，让页面一开始就展示固定内容。
 
 2. 具体编码：
 
