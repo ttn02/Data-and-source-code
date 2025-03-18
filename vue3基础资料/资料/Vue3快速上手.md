@@ -1563,7 +1563,7 @@ routes:[
    			children:[
    				{
    					name:'xiang',
-   					path:'detail',
+   					path:'detail/:id/:title/:content?', // 后面加个问号可以表示参数的必要性
    					component:Detail
    				}
    			]
@@ -1650,7 +1650,26 @@ routes:[
 
       ```vue
       <!-- 跳转并携带params参数（to的字符串写法） -->
+      <!-- 在使用冒号to（:to）时，记得加上模版字符串 ` ` -->
       <RouterLink :to="`/news/detail/001/新闻001/内容001`">{{news.title}}</RouterLink>
+      
+      	
+      
+      <!-- 跳转并携带params参数（to的对象写法） -->
+      <RouterLink 
+        :to="{
+          name:'xiang', //只能用name跳转，用 path vue会忽视不理会
+          params:{
+            id:news.id,
+            title:news.title,
+            content:news.title
+            // 不能传对象和数组 如：a:[1,2,3,3]
+          }
+        }"
+      >
+        {{news.title}}
+      </RouterLink>
+      
       <!-- 在index.ts文件中routes:[]的变化 -->
       routes:[
       	{
@@ -1666,21 +1685,6 @@ routes:[
       		]
       	}
       ]
-      	
-      
-      <!-- 跳转并携带params参数（to的对象写法） -->
-      <RouterLink 
-        :to="{
-          name:'xiang', //用name跳转
-          params:{
-            id:news.id,
-            title:news.title,
-            content:news.title
-          }
-        }"
-      >
-        {{news.title}}
-      </RouterLink>
       ```
 
    2. 接收参数：
