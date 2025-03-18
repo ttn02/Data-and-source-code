@@ -1260,6 +1260,17 @@ let person:Persons = [
     onBeforeUnmount(()=>{
       console.log('卸载之前')
     })
+    /* 
+    在父组件中调用一下 v-if 用来展示一下
+    <template>
+    	<Person/ v-if="isShow">
+    </template>
+    <script setup lang="ts" name="App">
+  	import Person from './components/Person.vue'
+  	import {ref} from 'vue'
+  	let isShow = ref(true)
+    </script>
+    */
     onUnmounted(()=>{
       console.log('卸载完毕')
     })
@@ -1268,7 +1279,13 @@ let person:Persons = [
 
 ## 3.14. 【自定义hook】
 
-- 什么是`hook`？—— 本质是一个函数，把`setup`函数中使用的`Composition API`进行了封装，类似于`vue2.x`中的`mixin`。
+- 什么是`hook`？—— 本质是一个函数，把`setup`函数中使用的`Composition API`进行了【封装】，类似于`vue2.x`中的`mixin`。
+
+- 新建hooks文件夹用于保存封装的方法（.js文件和.ts文件），在里面写入数据和方法，最后再对外界进行`return`返回数据和方法。
+
+- 调用时直接 `import useXxx from '@/hooks/useXxx'`
+
+- 命名规范： use+首字母大写的事物，例如：useDog、useTeacher、useOrder等等。
 
 - 自定义`hook`的优势：复用代码, 让`setup`中的逻辑更清楚易懂。
 
@@ -1279,6 +1296,7 @@ let person:Persons = [
   ```js
   import {ref,onMounted} from 'vue'
   
+  // 默认抛出的只能是值（数据或数组），所以这里是一个无名的函数，这样符合语法规范不会报错
   export default function(){
     let sum = ref(0)
   
@@ -1303,6 +1321,7 @@ let person:Persons = [
   import {reactive,onMounted} from 'vue'
   import axios,{AxiosError} from 'axios'
   
+  // 默认抛出的只能是值（数据或数组），所以这里是一个无名的函数，这样符合语法规范不会报错。
   export default function(){
     let dogList = reactive<string[]>([])
   
@@ -1395,12 +1414,17 @@ let person:Persons = [
   		}
   	]
   })
+  
+  // 创建完成之后需要抛出路由
   export default router
   ```
 * `main.ts`代码如下：
 
   ```js
   import router from './router/index'
+  
+  const app = create(App)
+  
   app.use(router)
   
   app.mount('#app')
@@ -1414,6 +1438,7 @@ let person:Persons = [
       <h2 class="title">Vue路由测试</h2>
       <!-- 导航区 -->
       <div class="navigate">
+        // 这里的to标签只会局部刷新，active-class="active"是被激活时的类名，点击之后才会响应
         <RouterLink to="/home" active-class="active">首页</RouterLink>
         <RouterLink to="/news" active-class="active">新闻</RouterLink>
         <RouterLink to="/about" active-class="active">关于</RouterLink>
@@ -1426,6 +1451,7 @@ let person:Persons = [
   </template>
   
   <script lang="ts" setup name="App">
+    // RouterLink是一个组件
     import {RouterLink,RouterView} from 'vue-router'  
   </script>
   ```
@@ -1434,7 +1460,9 @@ let person:Persons = [
 
 > 1. 路由组件通常存放在`pages` 或 `views`文件夹，一般组件通常存放在`components`文件夹。
 >
-> 2. 通过点击导航，视觉效果上“消失” 了的路由组件，默认是被**卸载**掉的，需要的时候再去**挂载**。
+> 2. 一般组件和路由组件的区别：一般组件是指自己写的标签<Person/>,路由组件靠路由规则渲染出来的。
+>
+> 3. 通过点击导航，视觉效果上“消失” 了的路由组件，默认是被**卸载**掉的，需要的时候再去**挂载**。
 
 ## 4.4.【路由器工作模式】
 
@@ -1470,7 +1498,7 @@ let person:Persons = [
 <!-- 第一种：to的字符串写法 -->
 <router-link active-class="active" to="/home">主页</router-link>
 
-<!-- 第二种：to的对象写法 -->
+<!-- 第二种：to的对象写法，在前面加了‘:’,使其不再是字符串而是对象 -->
 <router-link active-class="active" :to="{path:'/home'}">Home</router-link>
 ```
 
@@ -1528,6 +1556,7 @@ routes:[
    			component:Home
    		},
    		{
+     // <router-link :to="{path:'/news/detail'}">xxxx</router-link>
    			name:'xinwen',
    			path:'/news',
    			component:News,
@@ -1583,7 +1612,7 @@ routes:[
    1. 传递参数
 
       ```vue
-      <!-- 跳转并携带query参数（to的字符串写法） -->
+      <!-- 跳转并携带query参数（to的字符串写法）'问号'后面表示要开始传参数，以键值的方式传递，每个值用'&'符号进行分隔 -->
       <router-link to="/news/detail?a=1&b=2&content=欢迎你">
       	跳转
       </router-link>
@@ -1608,6 +1637,7 @@ routes:[
 
       ```js
       import {useRoute} from 'vue-router'
+      // 使用 useRouter() 来获取 query 的值
       const route = useRoute()
       // 打印query参数
       console.log(route.query)
@@ -1621,7 +1651,23 @@ routes:[
       ```vue
       <!-- 跳转并携带params参数（to的字符串写法） -->
       <RouterLink :to="`/news/detail/001/新闻001/内容001`">{{news.title}}</RouterLink>
-      				
+      <!-- 在index.ts文件中routes:[]的变化 -->
+      routes:[
+      	{
+      		name:'xinwen',
+      		path:'/news',
+      		component:Home,
+      		children:[
+      			{
+      				name:'xiang'
+      				path:'datail/:x/:y/:z',
+      				component:Detail
+      			}
+      		]
+      	}
+      ]
+      	
+      
       <!-- 跳转并携带params参数（to的对象写法） -->
       <RouterLink 
         :to="{
