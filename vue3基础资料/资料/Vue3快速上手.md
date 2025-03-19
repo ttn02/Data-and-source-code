@@ -520,6 +520,30 @@ function test(){
 > 2. 若需要一个响应式对象，层级不深，`ref`、`reactive`都可以。
 > 3. 若需要一个响应式对象，且层级较深，推荐使用`reactive`。
 
+- 注意事项：
+
+  在 reactive 中使用 ref 定义的数据不用 `.value` 默认使用ref定义的值为reactive类型的响应式数据
+
+  ~~~vue
+  <script setup>
+  	import {ref,reactive} from "vue"
+  	let obj = reactive(
+          {
+      		a:1,
+              b:2,
+              c:ref(3)
+          }
+      )
+      let x = ref(9)
+      console.log(obj.a)
+      console.log(obj.b)
+      console.log(obj.c)
+      console.log(x.value)
+  </script>
+  ~~~
+
+  
+
 ## 3.7. 【toRefs 与 toRef】
 
 - 作用：将一个响应式对象中的每一个属性，转换为`ref`对象。
@@ -1804,6 +1828,22 @@ console.log(router.replace)
 
 <img src="./images/pinia_example.gif" alt="pinia_example" style="zoom:30%;border:3px solid" /> 
 
+~~~vue
+<script>
+async function getLoveTalk(){
+    // 发请求，下面这行的写法是：连解构两次赋值+重命名（把axios的data解构出来，再从data里面解构content，最后把content改名为title）
+    let {data:{content:title}} = await axios.get('https://api.uomg.com/api/rand.com')
+    // 把请求会来的字符串包装成一个对象
+    let obj = {id:nanoid(), title}
+    console.log(obj)
+    // 放到数组的最前面
+    talkList.unshift()
+}
+</script>
+~~~
+
+
+
 ## 5.2【搭建 pinia 环境】
 
 第一步：`npm install pinia`
@@ -1842,7 +1882,7 @@ app.mount('#app')
    // 引入defineStore用于创建store
    import {defineStore} from 'pinia'
    
-   // 定义并暴露一个store
+   // 定义并暴露一个store，传递两个参数，第一个为id值（最好和文件名保持一致），第二个为配置项
    export const useCountStore = defineStore('count',{
      // 动作
      actions:{},
@@ -1925,7 +1965,7 @@ app.mount('#app')
    countStore.sum = 666
    ```
 
-2. 第二种修改方式：批量修改
+2. 第二种修改方式：【批量】修改用`$patch`（patch：碎片。意思是零零碎碎的去修改store里面的数据）
 
    ```ts
    countStore.$patch({
@@ -1934,18 +1974,19 @@ app.mount('#app')
    })
    ```
 
-3. 第三种修改方式：借助`action`修改（`action`中可以编写一些业务逻辑）
+3. 第三种修改方式：借助`action`修改（`action`中可以编写一些业务逻辑），注意：调用state里面的数据是要使用this调用。
 
    ```js
    import { defineStore } from 'pinia'
    
    export const useCountStore = defineStore('count', {
      /*************/
+     // actions 里面放置的是一个一个的方法，用于响应组件中的“动作”
      actions: {
        //加
        increment(value:number) {
          if (this.sum < 10) {
-           //操作countStore中的sum
+           //使用this操作countStore中的sum
            this.sum += value
          }
        },
@@ -1957,6 +1998,13 @@ app.mount('#app')
        }
      },
      /*************/
+     state(){
+           return{
+               sum:6,
+               school:'ttn',
+               address:'广西'
+           }
+       }
    })
    ```
 
