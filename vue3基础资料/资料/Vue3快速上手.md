@@ -1834,7 +1834,7 @@ async function getLoveTalk(){
     // 发请求，下面这行的写法是：连解构两次赋值+重命名（把axios的data解构出来，再从data里面解构content，最后把content改名为title）
     let {data:{content:title}} = await axios.get('https://api.uomg.com/api/rand.com')
     // 把请求会来的字符串包装成一个对象
-    let obj = {id:nanoid(), title}
+    let obj = {id:nanoid(), title} 	// 控制台安装了npm i nanoid ，再用import {nanoid} from 'nanoid'导入 用于给v-for分配hash值
     console.log(obj)
     // 放到数组的最前面
     talkList.unshift()
@@ -2022,7 +2022,7 @@ app.mount('#app')
 ## 5.5.【storeToRefs】
 
 - 借助`storeToRefs`将`store`中的数据转为`ref`对象，方便在模板中使用。
-- 注意：`pinia`提供的`storeToRefs`只会将数据做转换，而`Vue`的`toRefs`会转换`store`中数据。
+- 注意：`pinia`提供的`storeToRefs`只会将数据做转换，而`Vue`的`toRefs`会转换`store`中所有的数据（包括方法和函数都给包裹成ref）。
 
 ```vue
 <template>
@@ -2033,7 +2033,7 @@ app.mount('#app')
 
 <script setup lang="ts" name="Count">
   import { useCountStore } from '@/store/count'
-  /* 引入storeToRefs */
+  /* 引入storeToRefs，只会关注store中数据，不会对方法进行ref包裹 */
   import { storeToRefs } from 'pinia'
 
 	/* 得到countStore */
@@ -2046,7 +2046,7 @@ app.mount('#app')
 
 ## 5.6.【getters】
 
-  1. 概念：当`state`中的数据，需要经过处理后再使用时，可以使用`getters`配置。
+  1. 概念：不满意`state`里面的数据且要做出修改时，当`state`中的数据，需要经过处理后再使用时，可以使用`getters`配置。
 
   2. 追加```getters```配置。
 
@@ -2069,7 +2069,14 @@ app.mount('#app')
        },
        // 计算
        getters:{
+           /******
+           bigSum(state):number{
+           	state.sum *10,
+           }
+           想传值进操作可以改成箭头函数
+           ******/
          bigSum:(state):number => state.sum *10,
+           // 不想传值进去可以写成this.
          upperSchool():string{
            return this. school.toUpperCase()
          }
@@ -2091,6 +2098,7 @@ app.mount('#app')
 通过 store 的 `$subscribe()` 方法侦听 `state` 及其变化
 
 ```ts
+// 接收两个信息，mutate是本次修改的信息，state是真正的数据
 talkStore.$subscribe((mutate,state)=>{
   console.log('LoveTalk',mutate,state)
   localStorage.setItem('talk',JSON.stringify(talkList.value))
@@ -2157,8 +2165,10 @@ export const useTalkStore = defineStore('talk',()=>{
   <div class="father">
     <h3>父组件，</h3>
 		<h4>我的车：{{ car }}</h4>
-		<h4>儿子给的玩具：{{ toy }}</h4>
-		<Child :car="car" :getToy="getToy"/>
+      	// v-if 这里如果toy为空（false）的话不显示，有值（true）才显示。
+		<h4 v-if="toy">儿子给的玩具：{{ toy }}</h4>
+        // 逗号里面隶属于本组件的方法和数据
+		<Child :car="car1" :getToy="getToy1"/>
   </div>
 </template>
 
@@ -2166,10 +2176,10 @@ export const useTalkStore = defineStore('talk',()=>{
 	import Child from './Child.vue'
 	import { ref } from "vue";
 	// 数据
-	const car = ref('奔驰')
+	const car1 = ref('奔驰')
 	const toy = ref()
 	// 方法
-	function getToy(value:string){
+	function getToy1(value:string){
 		toy.value = value
 	}
 </script>
@@ -2183,6 +2193,7 @@ export const useTalkStore = defineStore('talk',()=>{
     <h3>子组件</h3>
 		<h4>我的玩具：{{ toy }}</h4>
 		<h4>父给我的车：{{ car }}</h4>
+      	// 注意：要给原本父组件中 value 的值填上 toy 传回去
 		<button @click="getToy(toy)">玩具给父亲</button>
   </div>
 </template>
@@ -2190,14 +2201,14 @@ export const useTalkStore = defineStore('talk',()=>{
 <script setup lang="ts" name="Child">
 	import { ref } from "vue";
 	const toy = ref('奥特曼')
-	
+	// 使用时注意不要忘记getToy是个带参的方法，不要忘记给传进去
 	defineProps(['car','getToy'])
 </script>
 ```
 
 ## 6.2. 【自定义事件】
 
-1. 概述：自定义事件常用于：**子 => 父。**
+1. 概述：自定义事件常用于：**子 => 父（子传父）。**用emit自定义事件进行传递。
 2. 注意区分好：原生事件、自定义事件。
 
 - 原生事件：
@@ -2205,6 +2216,7 @@ export const useTalkStore = defineStore('talk',()=>{
   - 事件对象`$event`: 是包含事件相关信息的对象（`pageX`、`pageY`、`target`、`keyCode`）
 - 自定义事件：
   - 事件名是任意名称
+  - 命名规范：肉串命名`@send-toy`
   - <strong style="color:red">事件对象`$event`: 是调用`emit`时所提供的数据，可以是任意类型！！！</strong >
 
 3. 示例：
@@ -2219,7 +2231,11 @@ export const useTalkStore = defineStore('talk',()=>{
 
    ```js
    //子组件中，触发事件：
-   this.$emit('send-toy', 具体数据)
+   this.$emit('send-toy', 具体要传的数据在父组件的带参函数中接收)
+   
+   function toy(value:string){
+   		toy.value = value
+   	}
    ```
 
 ## 6.3. 【mitt】
