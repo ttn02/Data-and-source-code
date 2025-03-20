@@ -1822,7 +1822,7 @@ console.log(router.replace)
 
 
 
-# 5. pinia 
+# 5. pinia （讲方法和数据进行封装）
 
 ## 5.1【准备一个效果】
 
@@ -2238,7 +2238,7 @@ export const useTalkStore = defineStore('talk',()=>{
    	}
    ```
 
-## 6.3. 【mitt】
+## 6.3. 【mitt】以事件绑定的方式进行组件通信
 
 概述：与消息订阅与发布（`pubsub`）功能类似，可以实现任意组件间通信。
 
@@ -2254,7 +2254,7 @@ npm i mitt
 // 引入mitt 
 import mitt from "mitt";
 
-// 创建emitter
+// 调用mitt得到emitter，emitter能：绑事件，触发事件。
 const emitter = mitt()
 
 /*
@@ -2266,15 +2266,19 @@ const emitter = mitt()
     console.log('xyz事件被触发',value)
   })
 
+  // 每隔一秒钟触发一次
   setInterval(() => {
     // 触发事件
     emitter.emit('abc',666)
     emitter.emit('xyz',777)
   }, 1000);
-
+  
+  // 3秒后触发事件
   setTimeout(() => {
-    // 清理事件
-    emitter.all.clear()
+    // 清理事件，单个清理和全部清理
+    emitter.off('test1')	// 单个解绑事件
+    emitter.off('test2')
+    emitter.all.clear()		// 多个
   }, 3000); 
 */
 
@@ -2294,7 +2298,7 @@ emitter.on('send-toy',(value)=>{
 })
 
 onUnmounted(()=>{
-  // 解绑事件
+  // 组件卸载时解绑事件，用完之后会一直绑定着会浪费内存
   emitter.off('send-toy')
 })
 ```
@@ -2314,7 +2318,7 @@ function sendToy(){
 
 ## 6.4.【v-model】
 
-1. 概述：实现 **父↔子** 之间相互通信。
+1. 概述：实现 **父↔子** 之间子组件和父组件相互通信（第一项父传子，第二项子传父）。
 
 2. 前序知识 —— `v-model`的本质
 
@@ -2322,21 +2326,23 @@ function sendToy(){
    <!-- 使用v-model指令 -->
    <input type="text" v-model="userName">
    
-   <!-- v-model的本质是下面这行代码 -->
+   <!-- v-model的本质是下面这行代码（value 值，同时配合 @input 输入事件） -->
    <input 
      type="text" 
      :value="userName" 
+     <!-- @input="userName =$event.target.value"  会报错（无法确定$event.target的值是否不为空），需要使用<HTMLInputElement>告诉他不为null是html里面的输入元素 -->
      @input="userName =(<HTMLInputElement>$event.target).value"
-   >
+    >
    ```
 
 3. 组件标签上的`v-model`的本质：`:moldeValue` ＋ `update:modelValue`事件。
 
    ```vue
-   <!-- 组件标签上使用v-model指令 -->
+   
+   <!-- <AtguiguInput/>为自定义组件，组件标签上使用v-model指令 -->
    <AtguiguInput v-model="userName"/>
    
-   <!-- 组件标签上v-model的本质 -->
+   <!-- 组件标签上v-model的本质:(:modelValue="userName")第一项是向其他组件传递数据，传递的数据需要通过第二项事件响应回传从键盘输入的值" -->
    <AtguiguInput :modelValue="userName" @update:model-value="userName = $event"/>
    ```
 
@@ -2363,7 +2369,7 @@ function sendToy(){
    </script>
    ```
 
-4. 也可以更换`value`，例如改成`abc`
+4. 细节：也可以更换`value`，例如改成`abc`。**（类似于变相的给v-model的值起名字）**
 
    ```vue
    <!-- 也可以更换value，例如改成abc-->
@@ -2405,9 +2411,9 @@ function sendToy(){
 
 ## 6.5.【$attrs 】
 
-1. 概述：`$attrs`用于实现**当前组件的父组件**，向**当前组件的子组件**通信（**祖→孙**）。
+1. 概述：`$attrs`用于实现**当前组件的父组件**，向**当前组件的子组件**通信（**祖→孙**），父子孙，通过父组件通过子组件来给孙组件传递参数。
 
-2. 具体说明：`$attrs`是一个对象，包含所有父组件传入的标签属性。
+2. 具体说明：`$attrs`是一个对象，包含所有父组件传入的标签属性（传入的值）。
 
    >  注意：`$attrs`会自动排除`props`中声明的属性(可以认为声明过的 `props` 被子组件自己“消费”了)
 
@@ -2484,6 +2490,58 @@ function sendToy(){
    | --------- | -------------------------------------------------------- |
    | `$refs`   | 值为对象，包含所有被`ref`属性标识的`DOM`元素或组件实例。 |
    | `$parent` | 值为对象，当前组件的父组件实例对象。                     |
+   
+   在父组件中使用 `$refs ` ：
+
+~~~vue
+<template>
+	<div class="father">
+        <button @click="getAllchild($refs)">获取所有的子组件实例对象</button>
+        <Child1 ref="c1"/>
+        <Child2 ref="c2"/>
+	</div>
+</template>
+
+<script setup lang="ts" name="Father">
+	import child1 from './Child1.vue'
+    import child2 from './Child2.vue'
+    import { ref } from "vue";
+    let c1 = ref()
+    let c2 = ref()
+    function getAllChild(ref:any){ // ts语法可能检测不到ref到底是什么类型，给标any可以避免报错
+        // 这里获取的ref是一个对象，把孩子们的书点一下加三本
+        for(let key in ref){
+            ref[key].book += 3
+        }
+    }
+    // 宏定义,把数据交出去
+	defineExpose({c1, c2})
+</script>
+~~~
+
+​	在子组件中使用 `$parent ` ：
+
+~~~vue
+<template>
+	<div class="Child">
+        <button @click="ninusHouse($parent)">获取父组件实例对象</button>
+	</div>
+</template>
+
+<script setup lang="ts" name="Child">
+    import { ref } from "vue";
+    let toy = ref('奥特曼')
+    let book = ref(3)
+    function minusHouse(parent:any){
+        parent.house -= 1
+        console.log(parent)
+    }
+    // 宏定义,把数据交出去
+    defineExpose({toy, book})
+</script>
+~~~
+
+
 
 ## 6.7. 【provide、inject】
 
@@ -2523,9 +2581,9 @@ function sendToy(){
      function updateMoney(value:number){
        money.value += value
      }
-     // 提供数据
+     // 直接使用provide向后代提供数据
      provide('moneyContext',{money,updateMoney})
-     provide('car',car)
+     provide('car1',car)
    </script>
    ```
    
@@ -2546,8 +2604,10 @@ function sendToy(){
    <script setup lang="ts" name="GrandChild">
      import { inject } from 'vue';
      // 注入数据
+     // 如果匹配不到相同名字的数据，会有一个默认值来顶替该数字如下：（第一项为匹配的数据，第二项为默认值）
+    let money = inject('money11111111',666)
     let {money,updateMoney} = inject('moneyContext',{money:0,updateMoney:(x:number)=>{}})
-     let car = inject('car')
+     let car = inject('car1')
    </script>
    ```
 
