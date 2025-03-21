@@ -2606,6 +2606,8 @@ function sendToy(){
      // 注入数据
      // 如果匹配不到相同名字的数据，会有一个默认值来顶替该数字如下：（第一项为匹配的数据，第二项为默认值）
     let money = inject('money11111111',666)
+    // 传递过来的是一个一个数据一个方法，需要对其进行解构取出数据
+    // 对其进行默认值设置的时候，由于函数里面带参数，所以需要对其进行赋值一个无名带参函数
     let {money,updateMoney} = inject('moneyContext',{money:0,updateMoney:(x:number)=>{}})
      let car = inject('car1')
    </script>
@@ -2623,7 +2625,7 @@ function sendToy(){
 ![img](http://49.232.112.44/images/default_slot.png)
 
 ```vue
-父组件中：
+父组件中：使用组件的双标签，里面写入东西不会显示，只有子组件中使用插槽的时候才会显示
         <Category title="今日热门游戏">
           <ul>
             <li v-for="g in games" :key="g.id">{{ g.name }}</li>
@@ -2633,13 +2635,13 @@ function sendToy(){
         <template>
           <div class="item">
             <h3>{{ title }}</h3>
-            <!-- 默认插槽 -->
-            <slot></slot>
+            <!-- 默认插槽：当父组件没有传递数据时，插槽将会自动显示默认值 -->
+            <slot>默认值</slot>
           </div>
         </template>
 ```
 
-### 2. 具名插槽
+### 2. 具名插槽（在插槽上写了名字，用的时候只能用在template标签和组件标签）
 
 ```vue
 父组件中：
@@ -2649,6 +2651,7 @@ function sendToy(){
               <li v-for="g in games" :key="g.id">{{ g.name }}</li>
             </ul>
           </template>
+          <!-- 插槽的简写#s2，等同于v-slot:s2 -->
           <template #s2>
             <a href="">更多</a>
           </template>
@@ -2665,15 +2668,18 @@ function sendToy(){
 
 ### 3. 作用域插槽 
 
-1. 理解：<span style="color:red">数据在组件的自身，但根据数据生成的结构需要组件的使用者来决定。</span>（新闻数据在`News`组件中，但使用数据所遍历出来的结构由`App`组件决定）
+1. 理解：<span style="color:red">数据在组件的自身，但根据数据生成的结构需要组件的使用者来决定。(数据由子组件保管，父组件负责用于搭建结构)</span>（新闻数据在`News`组件中，但使用数据所遍历出来的结构由`App`组件决定）
 
 3. 具体编码：
 
    ```vue
    父组件中：
+   	  所有从子组件中传递过来的数据，全部存放在传过来的params对象中，params为自己起的名字
          <Game v-slot="params">
          <!-- <Game v-slot:default="params"> -->
          <!-- <Game #default="params"> -->
+         <!-- 可以进行解构<Game v-slot="{ game1 }"> -->
+         <!-- 解构完直接调用 v-for="g in game1" -->
            <ul>
              <li v-for="g in params.games" :key="g.id">{{ g.name }}</li>
            </ul>
@@ -2683,7 +2689,8 @@ function sendToy(){
          <template>
            <div class="category">
              <h2>今日游戏榜单</h2>
-             <slot :games="games" a="哈哈"></slot>
+   <!--在默认插槽slot里面给上数据 :games="games" 使用者能够使用给上的数据 -->
+             <slot :games1="games" a="哈哈"></slot>
            </div>
          </template>
    
@@ -2704,15 +2711,37 @@ function sendToy(){
 
 ## 7.1.【shallowRef 与 shallowReactive 】
 
-### `shallowRef`
+### `shallowRef（调用浅层的ref）`
 
-1. 作用：创建一个响应式数据，但只对顶层属性进行响应式处理。
+1. 作用：创建一个响应式数据，但只对顶层属性进行响应式处理，用于检查整体数据有没有发生改变。
 
 2. 用法：
 
    ```js
+   // 跟 let myVar = ref(initialValue); 使用方式一致，只不过shallowRef只能调用最顶层的数据
    let myVar = shallowRef(initialValue);
    ```
+
+   ~~~js
+   let sum = shallowRef(0)
+   let person = shallowRef({
+   	name:'张三',
+   	age:18
+   })
+   
+   function changeSum (){	// 调用成功
+       sum.value += 1
+   }
+   function changeName (){	// 调用失败，只能调到value
+       person.value.name = '李四'
+   }
+   function changeAge (){	// 调用失败，只能调到value
+       person.value.age += 1
+   }
+   function changePerson (){	// 调用成功
+       person.value = {name:'tony', age:100}
+   }
+   ~~~
 
 3. 特点：只跟踪引用值的变化，不关心值内部的属性变化。
 
@@ -2734,7 +2763,7 @@ function sendToy(){
 
 
 
-## 7.2.【readonly 与 shallowReadonly】
+## 7.2.【readonly 与 shallowReadonly】对数据的一种保护
 
 ### **`readonly`**
 
@@ -2777,7 +2806,7 @@ function sendToy(){
 
 ## 7.3.【toRaw 与 markRaw】
 
-### `toRaw`
+### `toRaw：`
 
 1. 作用：用于获取一个响应式对象的原始对象， `toRaw` 返回的对象不再是响应式的，不会触发视图更新。
 
@@ -2816,6 +2845,8 @@ function sendToy(){
 
 1. 作用：标记一个对象，使其**永远不会**变成响应式的。
 
+   > 使用三方库时，为了防止意外修改三方库为响应式对象，可以提前使用markRaw制成不能修改为响应式对象的值
+   >
    > 例如使用`mockjs`时，为了防止误把`mockjs`变为响应式对象，可以使用 `markRaw` 去标记`mockjs`
 
 2. 编码：
@@ -2834,13 +2865,38 @@ function sendToy(){
 
 ## 7.4.【customRef】
 
-作用：创建一个自定义的`ref`，并对其依赖项跟踪和更新触发进行逻辑控制。
+作用：创建一个自定义的`ref`，并对其依赖项跟踪和更新触发进行逻辑控制，正常`ref`即用即变，自定义响应式数据`customRef`只有达到某种条件后才会变化。
+
+语法：
+
+```ts
+import { customRef } from 'vue'
+let initValue = '你好'
+// track（跟踪）、trigger（触发）
+let msg = customRef((track, trigger)=>{
+    return {
+        // get何时调用？-- msg被读取时
+        get(){
+            track()  // 告诉vue数据msg很重要，需要对其进行持续关注，一旦msg变化就去更新
+            return initValue
+        },
+        // set何时调用？-- msg被修改时
+        set(value){
+            initValue = value
+            trigger()  // 通知vue数据msg发生了变化
+        }
+    }
+})
+```
+
+
 
 实现防抖效果（`useSumRef.ts`）：
 
 ```typescript
 import {customRef } from "vue";
 
+// 写成一个 hooks 对自定义相应对象进行封装
 export default function(initValue:string,delay:number){
   let msg = customRef((track,trigger)=>{
     let timer:number
@@ -2850,23 +2906,40 @@ export default function(initValue:string,delay:number){
         return initValue
       },
       set(value){
+        // 调用多了会堆积在一起，这里设置一个清理的方法，防止堆积
         clearTimeout(timer)
         timer = setTimeout(() => {
           initValue = value
           trigger() //通知Vue数据msg变化了
-        }, delay);
+        }, delay); // 每多少毫秒更新
       }
     }
   }) 
+  // 要记得hooks需要有返回值
   return {msg}
 }
 ```
 
 组件中使用：
 
+```vue
+<template>
+	<div class="app">
+        <h2>{{ msg }}</h2>
+        <input type="text" v-model="msg">
+    </div>
+</template>
+<script setup name="App">
+    import useMsgRef from './useMsgRef'
+    
+    // 使用vue提供的默认ref定义响应式数据，数据一变，页面就刷新
+    // let msg = ref('你好')
+    
+    // 使用useMsgRef来定义一个响应式数据，且具有延迟效果
+    let {msg} = useMsgRef('ttn',1000)
 
-
-
+</script>
+```
 
 # 8. Vue3新组件
 
