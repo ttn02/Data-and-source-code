@@ -2945,9 +2945,10 @@ export default function(initValue:string,delay:number){
 
 ## 8.1. 【Teleport】
 
-- 什么是Teleport？—— Teleport 是一种能够将我们的**组件html结构**移动到指定位置的技术。
+- 什么是Teleport？—— Teleport 是一种能够将我们的**组件html结构**移动到指定位置的技术，例如把子组件的div标签给绑定到body标签下。
 
 ```html
+// to='body' 这个弹窗弹出来后塞到 body标签 里面，里面只能填选择器（类选择器、元素选择器、选择器字符串#app等等）
 <teleport to='body' >
     <div class="modal" v-show="isShow">
       <h2>我是一个弹窗</h2>
@@ -2960,6 +2961,8 @@ export default function(initValue:string,delay:number){
 ## 8.2. 【Suspense】
 
 -  等待异步组件时渲染一些额外内容，让应用有更好的用户体验 
+-  子组件使用了异步任务时，网速加载比较慢，但是又不想网页为空的，可以Suspense来呈现一些数据
+
 -  使用步骤： 
    -  异步引入组件
    -  使用`Suspense`包裹组件，并配置好`default` 与 `fallback`
@@ -2974,9 +2977,12 @@ const Child = defineAsyncComponent(()=>import('./Child.vue'))
     <div class="app">
         <h3>我是App组件</h3>
         <Suspense>
+            // 底是用插槽实现的
+            // 第一段template是异步任务完成了才会出现
           <template v-slot:default>
             <Child/>
           </template>
+		  // 第二段template是异步任务没有做完才会出现
           <template v-slot:fallback>
             <h3>加载中.......</h3>
           </template>
@@ -2990,13 +2996,69 @@ const Child = defineAsyncComponent(()=>import('./Child.vue'))
 ## 8.3.【全局API转移到应用对象】
 
 - `app.component`
+
+  - 将组件定义为全局组件(在main.t或者main.js里面使用)
+    ```ts
+    import { createApp } from 'vue'
+    import App from './App.vue'
+    import Hello from './Hello.vue'
+    app.component('Hello',Hello)
+    ```
+
 - `app.config`
+
+  - 对数据进行全局配置
+    [点击此处跳转官网](https://vuejs.org/guide/typescript/options-api.html#augmenting-global-properties)
+
+    ~~~ts
+    app.config.globalProperties.x = 99 // 能用，用的地方会飘红，少用，尽量去官网使用标准语法
+    
+    // 官网上的
+    declare module 'vue' {
+      interface ComponentCustomProperties {
+        $http: typeof axios
+        $translate: (key: string) => string
+      }
+    }
+    
+    // 修改后
+    declare module 'vue' {
+      interface ComponentCustomProperties {
+        x:number
+      }
+    }
+    ~~~
+
 - `app.directive`
+
+  - 注册全局指令
+    ~~~ts
+    app.directive('beauty',(element,{value})=>{
+        element.innerText += value
+        element.style.color = 'green'
+        element.style.backgroundColor = 'yellow'
+    })
+    
+    // 在任何一个地方都可以用，如下
+    <h3>当前求和为：{{ sum }}</h3>
+    <h4 v-beauty="sum">ttn</h4>
+    ~~~
+
 - `app.mount`
+
+  - 装载app
+
 - `app.unmount`
+
+  - 卸载app
+
 - `app.use`
 
 ## 8.4.【其他】
+
+所有的非兼容性改变，出自官网
+
+[所有非兼容性改变](https://v3-migration.vuejs.org/zh/breaking-changes/)
 
 - 过渡类名 `v-enter` 修改为 `v-enter-from`、过渡类名 `v-leave` 修改为 `v-leave-from`。
 
