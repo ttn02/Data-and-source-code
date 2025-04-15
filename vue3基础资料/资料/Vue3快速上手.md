@@ -52,7 +52,7 @@
 
 
 
-# 2. 创建Vue3工程
+# 2. 创建Vue3工程（vite创建项目、路由初始化、pinia初始化和远程仓库管理Git）
 
 ## 2.1. 【基于 vue-cli 创建】
 点击查看[官方文档](https://cli.vuejs.org/zh/guide/creating-a-project.html#vue-create)
